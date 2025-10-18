@@ -100,11 +100,10 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Build du frontend avec l'URL INTERNE Kubernetes
+                    // Build du frontend avec l'URL EXTERNE Minikube
                     sh """
-                    MINIKUBE_IP=\$(minikube ip)
-                    docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \\
-                    --build-arg VITE_API_URL=http://\\$MINIKUBE_IP:30001/api ./front
+                    docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \
+                    --build-arg VITE_API_URL=http://192.168.49.2:30001/api ./front
                     """
                     sh "docker build -t $DOCKER_HUB_USER/$BACKEND_IMAGE:latest ./back"
                 }
