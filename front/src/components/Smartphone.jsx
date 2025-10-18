@@ -1,15 +1,13 @@
 function Smartphone({ smartphone, onSelect, supprimer }) {
   const handleSupprimer = () => {
     if (window.confirm(`Voulez-vous vraiment supprimer "${smartphone.nom}" ?`)) {
-      supprimer(smartphone);  // ✅ ENVOIE L'OBJET COMPLET
+      supprimer(smartphone.id); 
     }
   };
 
   return (
     <tr className="hover:bg-gray-100 transition-all duration-200">
-      <td className="py-3 px-4 font-medium text-gray-700">
-        {smartphone._id || smartphone.id}  {/* ✅ Affiche _id ou id */}
-      </td>
+      <td className="py-3 px-4 font-medium text-gray-700">{smartphone.id}</td>
       <td className="px-6 py-3 font-semibold text-gray-800">{smartphone.nom}</td>
       <td className="py-3 px-4 font-semibold text-gray-800">
         {smartphone.prix.toLocaleString()} FCFA
