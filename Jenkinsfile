@@ -103,7 +103,7 @@ pipeline {
                     // Build du frontend avec l'URL INTERNE Kubernetes
                     sh """
                     docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \
-                    --build-arg VITE_API_URL=http://backend-service:5000/api ./front
+                    --build-arg VITE_API_URL=http://$(minikube ip):30001/api ./front
                     """
                     sh "docker build -t $DOCKER_HUB_USER/$BACKEND_IMAGE:latest ./back"
                 }
