@@ -172,35 +172,7 @@ pipeline {
             }
         }
 
-        /*  stage('Smoke Test') {
-            steps {
-                sh '''
-                    echo "Vérification Frontend (port 5173)..."
-                    curl -f http://localhost:5173 || echo "Frontend unreachable"
-      
-                    echo "Vérification Backend (port 5001)..."
-                    curl -f http://localhost:5001/api || echo "Backend unreachable"
-                '''
-            }
-       }*/
-
-       /*stage('Smoke Test') {
-            steps {
-                sh '''
-                    NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-                    FRONT_PORT=$(kubectl get service frontend-service -o jsonpath='{.spec.ports[0].nodePort}')
-                    BACK_PORT=$(kubectl get service backend-service -o jsonpath='{.spec.ports[0].nodePort}')
-
-                    FRONT_URL=http://$NODE_IP:$FRONT_PORT
-                    BACK_URL=http://$NODE_IP:$BACK_PORT
-
-                    curl -f $FRONT_URL || echo "Frontend unreachable"
-                    curl -f $BACK_URL/api || echo "Backend unreachable"
-                '''
-            }
-        }*/
-
-    }
+        
 
     post {
         success {
