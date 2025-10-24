@@ -39,16 +39,16 @@ pipeline {
                 script {
                     withCredentials([
                         usernamePassword(
-                            credentialsId: 'aws-credentials',         // ID de tes credentials AWS dans Jenkins
+                            credentialsId: 'aws-credentials',
                             usernameVariable: 'AWS_ACCESS_KEY_ID',
                             passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                         ),
                         string(
-                            credentialsId: 'aws-session-token',       // Token temporaire AWS (optionnel)
+                            credentialsId: 'aws-session-token',
                             variable: 'AWS_SESSION_TOKEN'
                         )
                     ]) {
-                        dir('terraform') {                            // On suppose que tes fichiers .tf sont dans terraform/
+                        dir('terraform') {
                             sh '''
                                 terraform init
                                 terraform plan -var-file=terraform.tfvars
@@ -64,7 +64,7 @@ pipeline {
             }
         }
 
-        // ⚙️ Étape 2 : Cloner ton code
+        // ⚙️ Étape 2 : Cloner le code
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Seynabou26/full_stack_app.git'
@@ -88,7 +88,7 @@ pipeline {
             }
         }
 
-        // 🧪 Étape 4 : Tests
+        // 🧪 Étape 4 : Exécuter les tests
         stage('Run tests') {
             steps {
                 script {
@@ -102,20 +102,16 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-<<<<<<< HEAD
-                    // Build du frontend avec l'URL EXTERNE Minikube
-=======
->>>>>>> a7b7c4e (Terraform)
                     sh """
-                    docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \
-                    --build-arg VITE_API_URL=http://192.168.49.2:30001/api ./front
+                        docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \
+                        --build-arg VITE_API_URL=http://192.168.49.2:30001/api ./front
                     """
                     sh "docker build -t $DOCKER_HUB_USER/$BACKEND_IMAGE:latest ./back"
                 }
             }
         }
 
-        // 📤 Étape 6 : Push sur DockerHub
+        // 📤 Étape 6 : Push des images sur DockerHub
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -128,9 +124,9 @@ pipeline {
             }
         }
 
-        // 🧹 Étape 7 : Nettoyage Docker local
+        // 🧹 Étape 7 : Nettoyage Docker
         stage('Clean Docker') {
-             steps {
+            steps {
                 sh 'docker container prune -f'
                 sh 'docker image prune -f'
             }
@@ -152,20 +148,15 @@ pipeline {
                     sh "kubectl apply -f k8s/front-deployment.yaml"
                     sh "kubectl apply -f k8s/front-service.yaml"
 
-                    // Vérification
+                    // Vérification du déploiement
                     sh "kubectl rollout status deployment/mongo"
                     sh "kubectl rollout status deployment/backend"
                     sh "kubectl rollout status deployment/frontend"
                 }
             }
         }
-<<<<<<< HEAD
 
-    }  
-
-=======
     }
->>>>>>> a7b7c4e (Terraform)
 
     // 📧 Notifications email
     post {
@@ -184,4 +175,5 @@ pipeline {
             )
         }
     }
+
 }
