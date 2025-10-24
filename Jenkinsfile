@@ -49,42 +49,6 @@ pipeline {
             }
         }
 
-        // ----------------------------
-        // SonarQube
-        // ----------------------------
-        //// Analyse le code avec SonarQube
-       /* stage('SonarQube Analysis') {
-            steps {
-                echo "Analyse du code avec SonarQube"
-                withSonarQubeEnv('Sonarqube_local') {
-                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
-                        sh """
-                            ${tool('Sonarqube_scanner')}/bin/sonar-scanner \
-                            -Dsonar.projectKey=sonarqube \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=$SONAR_HOST_URL \
-                            -Dsonar.login=$SONAR_TOKEN
-                        """
-                    }
-                }
-            }
-        }
-
-        /*Vérifie si le code passe le Quality Gate et arrête le pipeline si échoué
-        stage("Quality Gate") {
-            steps {
-                echo "Vérification du Quality Gate"
-               Timeout fixé à 10 minutes pour attendre la réponse de SonarQube
-               timeout(time: 10, unit: 'MINUTES') {
-                     si le Quality Gate échoue, le pipeline est stoppé
-                    waitForQualityGate(abortPipeline: true)
-                }
-            }
-        }*/
-
-        // ----------------------------
-        // Tests
-        // ----------------------------
         stage('Run tests') {
             steps {
                 script {
@@ -123,7 +87,7 @@ pipeline {
         }
         
         stage('Clean Docker') {
-            steps {
+             steps {
                 sh 'docker container prune -f'
                 sh 'docker image prune -f'
             }
@@ -173,6 +137,7 @@ pipeline {
         }
 
     }  
+
 
     post {
         success {
