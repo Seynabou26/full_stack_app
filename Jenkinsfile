@@ -9,6 +9,12 @@ pipeline {
         DOCKER_HUB_USER = 'seynabou02'
         FRONT_IMAGE = 'react-frontend'
         BACKEND_IMAGE = 'express-backend'
+        AWS_DEFAULT_REGION = 'us-west-2'
+        PATH = "/usr/local/bin:$PATH"
+    }
+
+    parameters {
+        booleanParam(name: 'APPLY_INFRA', defaultValue: false, description: 'Appliquer Terraform apply ?')
     }
 
     triggers {
@@ -27,12 +33,45 @@ pipeline {
 
     stages {
 
+        // 🚀 Étape 1 : Infrastructure Terraform
+        stage('Terraform - Infrastructure AWS') {
+            steps {
+                script {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'aws-credentials',         // ID de tes credentials AWS dans Jenkins
+                            usernameVariable: 'AWS_ACCESS_KEY_ID',
+                            passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ),
+                        string(
+                            credentialsId: 'aws-session-token',       // Token temporaire AWS (optionnel)
+                            variable: 'AWS_SESSION_TOKEN'
+                        )
+                    ]) {
+                        dir('terraform') {                            // On suppose que tes fichiers .tf sont dans terraform/
+                            sh '''
+                                terraform init
+                                terraform plan -var-file=terraform.tfvars
+                            '''
+                            if (params.APPLY_INFRA) {
+                                sh '''
+                                    terraform apply -auto-approve -var-file=terraform.tfvars
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ⚙️ Étape 2 : Cloner ton code
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Seynabou26/full_stack_app.git'
             }
         }
 
+        // 📦 Étape 3 : Installer les dépendances
         stage('Install dependencies - Backend') {
             steps {
                 dir('back') {
@@ -49,6 +88,7 @@ pipeline {
             }
         }
 
+        // 🧪 Étape 4 : Tests
         stage('Run tests') {
             steps {
                 script {
@@ -58,13 +98,14 @@ pipeline {
             }
         }
 
-        /// ----------------------------
-        // Docker
-        // ----------------------------
+        // 🐳 Étape 5 : Build des images Docker
         stage('Build Docker Images') {
             steps {
                 script {
+<<<<<<< HEAD
                     // Build du frontend avec l'URL EXTERNE Minikube
+=======
+>>>>>>> a7b7c4e (Terraform)
                     sh """
                     docker build -t $DOCKER_HUB_USER/$FRONT_IMAGE:latest \
                     --build-arg VITE_API_URL=http://192.168.49.2:30001/api ./front
@@ -73,7 +114,8 @@ pipeline {
                 }
             }
         }
-        
+
+        // 📤 Étape 6 : Push sur DockerHub
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -85,72 +127,59 @@ pipeline {
                 }
             }
         }
-        
+
+        // 🧹 Étape 7 : Nettoyage Docker local
         stage('Clean Docker') {
              steps {
                 sh 'docker container prune -f'
                 sh 'docker image prune -f'
             }
         }
-        
 
-        /*stage('Check Docker & Compose') {
-            steps {
-                sh 'docker --version'
-                sh 'docker-compose --version || echo "docker-compose non trouvé"'
-           }
-        }*/
-
-        /* stage('Deploy (compose.yaml)') {
-            steps {
-                dir('.') {
-                    sh 'docker-compose -f compose.yaml down || true'
-                    sh 'docker-compose -f compose.yaml pull'
-                    sh 'docker-compose -f compose.yaml up -d'
-                    sh 'docker-compose -f compose.yaml ps'
-                    sh 'docker-compose -f compose.yaml logs --tail=50'
-                }
-            }
-       }*/ 
-
+        // ☸️ Étape 8 : Déploiement Kubernetes
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-jenkins']) {
-                    // Déployer MongoDB
+                    // MongoDB
                     sh "kubectl apply -f k8s/mongo-deployment.yaml"
                     sh "kubectl apply -f k8s/mongo-service.yaml"
 
-                    // Déployer backend
+                    // Backend
                     sh "kubectl apply -f k8s/back-deployment.yaml"
                     sh "kubectl apply -f k8s/back-service.yaml"
 
-                    // Déployer frontend
+                    // Frontend
                     sh "kubectl apply -f k8s/front-deployment.yaml"
                     sh "kubectl apply -f k8s/front-service.yaml"
 
-                    // Vérifier que les pods sont Running
+                    // Vérification
                     sh "kubectl rollout status deployment/mongo"
                     sh "kubectl rollout status deployment/backend"
                     sh "kubectl rollout status deployment/frontend"
                 }
             }
         }
+<<<<<<< HEAD
 
     }  
 
+=======
+    }
+>>>>>>> a7b7c4e (Terraform)
 
+    // 📧 Notifications email
     post {
         success {
             emailext(
-                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Pipeline réussi\nDétails : ${env.BUILD_URL}",
+                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Pipeline réussi !\nDétails : ${env.BUILD_URL}",
                 to: "seynaboubadji26@gmail.com"
             )
         }
         failure {
             emailext(
-                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Le pipeline a échoué\nDétails : ${env.BUILD_URL}",
+                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué.\nDétails : ${env.BUILD_URL}",
                 to: "seynaboubadji26@gmail.com"
             )
         }
