@@ -106,13 +106,11 @@ resource "aws_instance" "web" {
   associate_public_ip_address = true
 
   iam_instance_profile = "LabInstanceProfile"  # profil IAM autorisé par le sandbox
-  key_name             = "labsuser"            # ✅ clé SSH utilisée pour la connexion
 
   tags = {
     Name = "FilRouge-EC2"
   }
 }
-
 
 ######################################################
 # 🗄️ BASE DE DONNÉES RDS (optionnelle)
