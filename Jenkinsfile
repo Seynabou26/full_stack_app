@@ -33,7 +33,7 @@ pipeline {
 
     stages {
 
-        // 🚀 Étape 1 : Infrastructure Terraform
+        //  Étape 1 : Infrastructure Terraform
         stage('Terraform - Infrastructure AWS') {
             steps {
                 script {
@@ -49,6 +49,7 @@ pipeline {
                         )
                     ]) {
                         dir('terraform') {
+                            // Init et plan Terraform
                             sh '''
                                 terraform init
                                 terraform plan -var-file=terraform.tfvars
@@ -64,14 +65,35 @@ pipeline {
             }
         }
 
-        // ⚙️ Étape 2 : Cloner le code
+        // Étape 2 : Cloner le code
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Seynabou26/full_stack_app.git'
             }
         }
 
-        // 📦 Étape 3 : Installer les dépendances
+        // Étape 3 : Scan sécurité Trivy - Analyse du code (FS)
+        stage('Trivy - FS scan') {
+            steps {
+                sh '''
+                    echo "Scan Trivy du code (File System)..."
+                    trivy fs --exit-code 0 --severity HIGH,CRITICAL .
+                '''
+            }
+        }
+
+        // Étape 4 : Scan Trivy - Configuration (K8s + Terraform)
+        stage('Trivy - Config Scan') {
+            steps {
+                sh '''
+                    echo "Scan Trivy des configurations..."
+                    trivy config --exit-code 0 ./k8s
+                    trivy config --exit-code 0 ./terraform
+                '''
+            }
+        }
+
+        // Installer dépendances backend
         stage('Install dependencies - Backend') {
             steps {
                 dir('back') {
@@ -80,6 +102,7 @@ pipeline {
             }
         }
 
+        // Installer dépendances frontend
         stage('Install dependencies - Frontend') {
             steps {
                 dir('front') {
@@ -88,7 +111,7 @@ pipeline {
             }
         }
 
-        // 🧪 Étape 4 : Exécuter les tests
+        // Tests
         stage('Run tests') {
             steps {
                 script {
@@ -98,7 +121,7 @@ pipeline {
             }
         }
 
-        // 🐳 Étape 5 : Build des images Docker
+        // Build Docker
         stage('Build Docker Images') {
             steps {
                 script {
@@ -111,7 +134,20 @@ pipeline {
             }
         }
 
-        // 📤 Étape 6 : Push des images sur DockerHub
+        // 🔍 Étape Trivy après build : Scan image Docker
+        stage('Trivy - Image Scan') {
+            steps {
+                sh """
+                    echo "Scan Trivy sur l'image frontend..."
+                    trivy image --exit-code 0 $DOCKER_HUB_USER/$FRONT_IMAGE:latest
+
+                    echo "Scan Trivy sur l'image backend..."
+                    trivy image --exit-code 0 $DOCKER_HUB_USER/$BACKEND_IMAGE:latest
+                """
+            }
+        }
+
+        // Push DockerHub
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -124,7 +160,7 @@ pipeline {
             }
         }
 
-        // 🧹 Étape 7 : Nettoyage Docker
+        // Nettoyage Docker
         stage('Clean Docker') {
             steps {
                 sh 'docker container prune -f'
@@ -132,23 +168,20 @@ pipeline {
             }
         }
 
-        // ☸️ Étape 8 : Déploiement Kubernetes
+        // Déploiement Kubernetes
         stage('Deploy to Kubernetes') {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig-jenkins']) {
-                    // MongoDB
                     sh "kubectl apply -f k8s/mongo-deployment.yaml"
                     sh "kubectl apply -f k8s/mongo-service.yaml"
 
-                    // Backend
                     sh "kubectl apply -f k8s/back-deployment.yaml"
                     sh "kubectl apply -f k8s/back-service.yaml"
 
-                    // Frontend
                     sh "kubectl apply -f k8s/front-deployment.yaml"
                     sh "kubectl apply -f k8s/front-service.yaml"
 
-                    // Vérification du déploiement
+                    // Vérification déploiement
                     sh "kubectl rollout status deployment/mongo"
                     sh "kubectl rollout status deployment/backend"
                     sh "kubectl rollout status deployment/frontend"
@@ -158,18 +191,18 @@ pipeline {
 
     }
 
-    // 📧 Notifications email
+    // 📧 Notifications
     post {
         success {
             emailext(
-                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: "Pipeline réussi !\nDétails : ${env.BUILD_URL}",
                 to: "seynaboubadji26@gmail.com"
             )
         }
         failure {
             emailext(
-                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                subject: "Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: "Le pipeline a échoué.\nDétails : ${env.BUILD_URL}",
                 to: "seynaboubadji26@gmail.com"
             )
