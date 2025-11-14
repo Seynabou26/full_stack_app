@@ -134,7 +134,7 @@ pipeline {
             }
         }
 
-        // 🔍 Étape Trivy après build : Scan image Docker
+        // Étape Trivy après build : Scan image Docker
         stage('Trivy - Image Scan') {
             steps {
                 sh """
@@ -191,7 +191,7 @@ pipeline {
 
     }
 
-    // 📧 Notifications
+    // Notifications
     post {
         success {
             emailext(
